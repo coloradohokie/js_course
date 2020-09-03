@@ -103,7 +103,7 @@ body {
     font-size: 30px;
 }
 
-button {
+button, input {
     position: absolute;
     width: 200px;
     left: 50%;
@@ -140,6 +140,14 @@ i {
 .btn-new { top: 45px;}
 .btn-roll { top: 403px;}
 .btn-hold { top: 467px;}
+.goal {
+    top: 75px;
+    border: 1px solid #EB4D4D;
+    width: 60px;
+    text-align: center;
+}
+.btn-goal { top: 97px;}
+
 
 .dice {
     position: absolute;
