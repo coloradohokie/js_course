@@ -4,7 +4,16 @@ var budgetController = (function() {
     var Expense = function(id, description, value) {
         this.id = id
         this.description = description
-        this.value = value
+        this.value = value,
+        this.percentage = -1
+    }
+
+    Expense.prototype.calcPercentage = function(totalIncome) {
+        totalIncome > 0 ? this.percentage = Math.round((this.value / totalIncome) * 100) : -1
+    }
+
+    Expense.prototype.getPercentage = function() {
+        return this.percentage
     }
 
     var Income = function(id, description, value) {
@@ -54,29 +63,34 @@ var budgetController = (function() {
 
         deleteItem: function(type, id) {
             var index
-
             var ids = data.allItems[type].map(function(current) {
                 return current.id
             })
-
             index = ids.indexOf(id)
-
             if (index !== -1) {
                 data.allItems[type].splice(index, 1)
             }
         },
 
         calculateBudget: function() {
-            //calc total income and expenses
             calculateTotal('exp')
             calculateTotal('inc')
-            //calc budget: inc - exp
             data.budget = data.totals.inc - data.totals.exp
-
-            //cacl % of income that we spent
-            console.log (data.totals.inc)
             data.totals.inc > 0 ? data.percentage = Math.round( (data.totals.exp / data.totals.inc) * 100 ) : -1
 
+        },
+
+        calculatePercentages: function() {
+            data.allItems.exp.forEach(element => {
+                element.calcPercentage(data.totals.inc)
+            })
+        },
+
+        getPercentages: function() {
+            var allPercentages = data.allItems.exp.map(element => {
+                return element.getPercentage()
+            })
+            return allPercentages
         },
 
         getBudget: function() {
@@ -112,7 +126,21 @@ var UIController = (function() {
         incomeLabel: '.budget__income--value',
         expensesLabel: '.budget__expenses--value',
         percentageLabel: '.budget__expenses--percentage',
-        container: '.container'
+        container: '.container',
+        expensesPercentageLabel: '.item__percentage'
+    }
+
+    var formatNumber = function(num, type) {
+        //+ or -, 2 decimal places, comma separating 1000's
+        num = Math.abs(num)
+        num = num.toFixed(2)
+        let numSplit = num.split('.')
+        let int = numSplit[0]
+        if (int.length > 3 ) {
+            int = int.substr(0, int.length - 3) + ',' + int.substr(int.length -3, 3)
+        }
+        let dec = numSplit[1]
+        return (type === 'exp' ? "-" : "+") + int + '.' + dec
     }
     
     return {
@@ -126,20 +154,14 @@ var UIController = (function() {
 
         addListItem: function(obj, type) {
             var html, newHtml, element
-            
-            //create HTML string with pl text
             if (type === 'inc') {
                 element = DOMstrings.incomeContainer
                 html = '<div class="item clearfix" id="inc-%id%"><div class="item__description">%description%</div><div class="right clearfix"><div class="item__value">%value%</div><div class="item__delete"><button class="item__delete--btn">DEL</button></div></div></div>'
             } else if (type === 'exp') {
                 element = DOMstrings.expenseContainer
-                html = '<div class="item clearfix" id="exp-%id%"><div class="item__description">%description%</div><div class="right clearfix"><div class="item__value">%value%</div><div class="item__percentage">21%</div><div class="item__delete"><button class="item__delete--btn">DEL</button></div></div></div>'
+                html = '<div class="item clearfix" id="exp-%id%"><div class="item__description">%description%</div><div class="right clearfix"><div class="item__value">%value%</div><div class="item__percentage">22%</div><div class="item__delete"><button class="item__delete--btn">DEL</button></div></div></div>'
             }
-
-            // replace pl text with data
-            newHtml = html.replace('%id%', obj.id).replace('%description%', obj.description).replace('%value%', obj.value)
-
-            //insert html into dom
+            newHtml = html.replace('%id%', obj.id).replace('%description%', obj.description).replace('%value%', formatNumber(obj.value, type))
             document.querySelector(element).insertAdjacentHTML('beforeend', newHtml)
         },
 
@@ -159,18 +181,26 @@ var UIController = (function() {
         },
 
         displayBudget: function(obj) {
-            document.querySelector(DOMstrings.budgetLabel).textContent = obj.budget
-            document.querySelector(DOMstrings.incomeLabel).textContent = obj.totalInc
-            document.querySelector(DOMstrings.expensesLabel).textContent = obj.totalExp
+            document.querySelector(DOMstrings.budgetLabel).textContent = formatNumber(obj.budget, obj.budget >= 0 ? 'inc' : 'exp') 
+            document.querySelector(DOMstrings.incomeLabel).textContent = formatNumber(obj.totalInc, 'inc')
+            document.querySelector(DOMstrings.expensesLabel).textContent = formatNumber(obj.totalExp, 'exp')
 
             obj.percentage > 0 ? 
                 document.querySelector(DOMstrings.percentageLabel).textContent = obj.percentage + '%' :
                 document.querySelector(DOMstrings.percentageLabel).textContent = '--'
         },
 
-        getDOMstrings: function() {
-            return DOMstrings
-        }
+        displayPercentages: function(percentages) {
+            var fields = document.querySelectorAll(DOMstrings.expensesPercentageLabel)
+            var nodeListForEach = (list, callback) => {
+                for (let i=0; i < list.length; i++) {
+                    callback(list[i], i)
+                }
+            }
+            nodeListForEach(fields, (current, index) => percentages[index] > 0 ? current.textContent = percentages[index] + '%' : current.textContent = '--')
+        },
+
+        getDOMstrings: () => DOMstrings
     }
 
 })()
@@ -183,47 +213,40 @@ var controller = (function(budgetCtrl, UICtrl) {
 
     var setupEventListeners = function() {
         var DOM = UICtrl.getDOMstrings()
-
         document.querySelector(DOM.inputButton).addEventListener('click', ctrlAddItem)
-        
         document.addEventListener('keypress', function(event) {
             if (event.keyCode === 13 || event.which === 13) {
                 ctrlAddItem()
             }
         })
-
         document.querySelector(DOM.container).addEventListener('click', ctrlDeleteItem)
     }
 
     var updateBudget = function() {
-        // 1. calc the budget
         budgetCtrl.calculateBudget()
-
-        // 2. return the budget
         var budget = budgetCtrl.getBudget()
-
-        // 3. Display the budget on the UI
         UICtrl.displayBudget(budget)
+    }
+
+    var updatePercentages = function() {
+        budgetCtrl.calculatePercentages()
+        var percentages = budgetCtrl.getPercentages()
+        console.log(percentages)
+        //update UI
+        UICtrl.displayPercentages(percentages)
+
     }
 
 
     var ctrlAddItem = function() {
         var input, newItem
-
-        //1. get the input data
         input = UICtrl.getInput()
-
         if (input.description !== '' && !isNaN(input.value) && input.value > 0 ) {
-
-            //2. Add the item to the budget controller
             newItem = budgetCtrl.addItem(input.type, input.description, input.value)
-
-            //3. add the item tot he UI
             UICtrl.addListItem(newItem, input.type)
             UICtrl.clearFields()
-
-            //4. calc and update the budget
             updateBudget()
+            updatePercentages()
         }
     }
 
@@ -233,20 +256,13 @@ var controller = (function(budgetCtrl, UICtrl) {
         itemId = event.target.parentNode.parentNode.parentNode.id
 
         if (itemId) {
-            //inc-1
             splitId = itemId.split('-')
             type = splitId[0]
             id = parseInt(splitId[1])
-
-            // del item from data structure
             budgetCtrl.deleteItem(type, id)
-
-            // del item from UI
             UICtrl.deleteListItem(itemId)
-
-            //update and show new totals
             updateBudget()
-
+            updatePercentages()
         }
     }
     
