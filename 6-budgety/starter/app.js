@@ -50,8 +50,20 @@ var budgetController = (function() {
 
             data.allItems[type].push(newItem)
             return newItem
+        },
 
+        deleteItem: function(type, id) {
+            var index
 
+            var ids = data.allItems[type].map(function(current) {
+                return current.id
+            })
+
+            index = ids.indexOf(id)
+
+            if (index !== -1) {
+                data.allItems[type].splice(index, 1)
+            }
         },
 
         calculateBudget: function() {
@@ -99,7 +111,8 @@ var UIController = (function() {
         budgetLabel: '.budget__value',
         incomeLabel: '.budget__income--value',
         expensesLabel: '.budget__expenses--value',
-        percentageLabel: '.budget__expenses--percentage'
+        percentageLabel: '.budget__expenses--percentage',
+        container: '.container'
     }
     
     return {
@@ -117,24 +130,22 @@ var UIController = (function() {
             //create HTML string with pl text
             if (type === 'inc') {
                 element = DOMstrings.incomeContainer
-                html = '<div class="item clearfix" id="income-%id%"><div class="item__description">%description%</div><div class="right clearfix"><div class="item__value">%value%</div><div class="item__delete"><button class="item__delete--btn">DEL</button></div></div></div>'
+                html = '<div class="item clearfix" id="inc-%id%"><div class="item__description">%description%</div><div class="right clearfix"><div class="item__value">%value%</div><div class="item__delete"><button class="item__delete--btn">DEL</button></div></div></div>'
             } else if (type === 'exp') {
                 element = DOMstrings.expenseContainer
-                html = '<div class="item clearfix" id="expense-%id%"><div class="item__description">%description%</div><div class="right clearfix"><div class="item__value">%value%</div><div class="item__percentage">21%</div><div class="item__delete"><button class="item__delete--btn">DEL</button></div></div></div>'
+                html = '<div class="item clearfix" id="exp-%id%"><div class="item__description">%description%</div><div class="right clearfix"><div class="item__value">%value%</div><div class="item__percentage">21%</div><div class="item__delete"><button class="item__delete--btn">DEL</button></div></div></div>'
             }
 
             // replace pl text with data
-            // newHtml = html.replace('%id%', obj.id)
-            // newHtml = newHtml.replace('%description%', obj.description)
-            // newHtml = newHtml.replace('%value%', obj.value)
-
             newHtml = html.replace('%id%', obj.id).replace('%description%', obj.description).replace('%value%', obj.value)
 
             //insert html into dom
             document.querySelector(element).insertAdjacentHTML('beforeend', newHtml)
+        },
 
-
-
+        deleteListItem: function(selectorId) {
+            var element = document.getElementById(selectorId)
+            element.parentNode.removeChild(element)
         },
 
         clearFields: function() {
@@ -180,6 +191,8 @@ var controller = (function(budgetCtrl, UICtrl) {
                 ctrlAddItem()
             }
         })
+
+        document.querySelector(DOM.container).addEventListener('click', ctrlDeleteItem)
     }
 
     var updateBudget = function() {
@@ -211,6 +224,29 @@ var controller = (function(budgetCtrl, UICtrl) {
 
             //4. calc and update the budget
             updateBudget()
+        }
+    }
+
+    var ctrlDeleteItem = function(event) {
+        var itemId, splitId, type, id
+
+        itemId = event.target.parentNode.parentNode.parentNode.id
+
+        if (itemId) {
+            //inc-1
+            splitId = itemId.split('-')
+            type = splitId[0]
+            id = parseInt(splitId[1])
+
+            // del item from data structure
+            budgetCtrl.deleteItem(type, id)
+
+            // del item from UI
+            UICtrl.deleteListItem(itemId)
+
+            //update and show new totals
+            updateBudget()
+
         }
     }
     
