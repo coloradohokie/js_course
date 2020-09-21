@@ -7,6 +7,7 @@ import List from './models/List'
 import * as searchView from './views/searchView'
 import * as recipeView from './views/recipeView'
 import * as listView from './views/listView'
+import * as likesView from './views/likesView'
 import {elements, renderLoader, clearLoader} from './views/base'
 import Likes from './models/Likes'
 
@@ -80,7 +81,7 @@ const controlRecipe = async () => {
             //render recipe
             clearLoader()
             recipeView.clearRecipe()
-            recipeView.renderRecipe(state.recipe)
+            recipeView.renderRecipe(state.recipe, state.likes.isLiked(id))
         } catch (error) {
             console.log(error)
             alert('something went wrong loading recipe')
@@ -102,7 +103,6 @@ const controlList = () => {
     //add ea ing to list & UI
     state.recipe.ingredients.forEach(el => {
         const item = state.list.addItem(el.count, el.unit, el.ingredient)
-       // console.log("item", item)
         listView.renderItem(item)
     })
 }
@@ -129,6 +129,8 @@ elements.shopping.addEventListener('click', e => {
 
 
 /////     LIKES CONTROLLER     /////
+state.likes = new Likes()
+likesView.toggleLikeMenu(state.likes.getNumLikes())
 const controlLike = () => {
     if (!state.likes) state.likes = new Likes()
     const currentId = state.recipe.id
@@ -143,21 +145,23 @@ const controlLike = () => {
             state.recipe.img
         )
         //Toggle the button
+        likesView.toggleLikeButton(true)
 
         //Add like to the UI list
-        console.log(state.likes)
+        likesView.renderLike(newLike)
     
-    //User has liked the current recipe
+    //User has liked the current recipe and is unliking it
     } else {
         //Remove like from state
         state.likes.deleteLike(currentId)
 
         //Toggle the button
+        likesView.toggleLikeButton(false)
 
         //Remove like from the UI list
-        console.log(state.likes)
+        likesView.deleteLike(currentId)
     }
-
+    likesView.toggleLikeMenu(state.likes.getNumLikes())
 }
 
 
