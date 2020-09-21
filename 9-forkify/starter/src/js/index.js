@@ -8,6 +8,7 @@ import * as searchView from './views/searchView'
 import * as recipeView from './views/recipeView'
 import * as listView from './views/listView'
 import {elements, renderLoader, clearLoader} from './views/base'
+import Likes from './models/Likes'
 
 
 const state = {}
@@ -127,6 +128,42 @@ elements.shopping.addEventListener('click', e => {
 })
 
 
+/////     LIKES CONTROLLER     /////
+const controlLike = () => {
+    if (!state.likes) state.likes = new Likes()
+    const currentId = state.recipe.id
+
+    //User has NOT liked the current recipe
+    if(!state.likes.isLiked(currentId)) {
+        //Add like to state
+        const newLike = state.likes.addLike(
+            currentId,
+            state.recipe.title,
+            state.recipe.author,
+            state.recipe.img
+        )
+        //Toggle the button
+
+        //Add like to the UI list
+        console.log(state.likes)
+    
+    //User has liked the current recipe
+    } else {
+        //Remove like from state
+        state.likes.deleteLike(currentId)
+
+        //Toggle the button
+
+        //Remove like from the UI list
+        console.log(state.likes)
+    }
+
+}
+
+
+
+
+
 //Handling recipe button clicks
 elements.recipe.addEventListener('click', e => {
     if (e.target.matches('.btn-decrease, .btn-decrease *')) {
@@ -136,8 +173,12 @@ elements.recipe.addEventListener('click', e => {
     } else if (e.target.matches('.btn-increase, .btn-increase *')) {
         state.recipe.updateServings('inc')
         recipeView.updateServingsIngredients(state.recipe)
-    } else if (e.target.matches('.recipe__btn--add, recipe__btn--add *')) {
+    } else if (e.target.matches('.recipe__btn--add, .recipe__btn--add *')) {
+        //Add ing to shopping list
         controlList()
+    } else if (e.target.matches('.recipe__love, .recipe__love *')) {
+        //Like controller
+        controlLike()
     }
 })
 
