@@ -1,6 +1,6 @@
 import {elements} from './base'
 
-export const renderItems = item => {
+export const renderItem = item => {
     const markup = `
         <li class="shopping__item" data-itemid=${item.id}>
             <div class="shopping__count">
