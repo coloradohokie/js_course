@@ -28,12 +28,13 @@ export const limitRecipeTitle = (title, limit=17) => {
             }
             return acc + cv.length
         }, 0)
-
+        return `${newTitle.join(' ')}...`
     }
-    return `${newTitle.join(' ')}...`
+    return title
 }
 
 const renderRecipe = recipe => {
+    console.log(recipe)
     const markup = `
         <li>
             <a class="results__link" href="#${recipe.recipe_id}">

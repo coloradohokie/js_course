@@ -34,15 +34,10 @@ const controlSearch = async () => {
     }
 }
 
-
-
 elements.searchForm.addEventListener('submit', e => {
     e.preventDefault()
     controlSearch()
 })
-
-
-
 
 elements.searchResPages.addEventListener('click', e => {
     const btn = e.target.closest('.btn-inline')
@@ -129,8 +124,7 @@ elements.shopping.addEventListener('click', e => {
 
 
 /////     LIKES CONTROLLER     /////
-state.likes = new Likes()
-likesView.toggleLikeMenu(state.likes.getNumLikes())
+
 const controlLike = () => {
     if (!state.likes) state.likes = new Likes()
     const currentId = state.recipe.id
@@ -165,8 +159,13 @@ const controlLike = () => {
 }
 
 
-
-
+//Restore liked recipes on page load
+window.addEventListener('load', () => {
+    state.likes = new Likes()
+    state.likes.readStorage()
+    likesView.toggleLikeMenu(state.likes.getNumLikes())
+    state.likes.likes.forEach(like => likesView.renderLike(like))
+})
 
 //Handling recipe button clicks
 elements.recipe.addEventListener('click', e => {
@@ -185,5 +184,3 @@ elements.recipe.addEventListener('click', e => {
         controlLike()
     }
 })
-
-window.l = new List()
